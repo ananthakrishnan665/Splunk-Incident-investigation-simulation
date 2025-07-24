@@ -66,8 +66,23 @@ Got 3 iP address check count and also check `http_methods` field we can see the 
     
   Look at the table we can see that `user`, `passwd` multiple times from an `IP 23.22.63.114`, that's a sign of a Brute-force attempt with the help of Automated tools (Look at the attempt in such a short time).
 
-  To show the user and pass values:
+  To show the user and pass values we use **regex** (Regular Expressions):
   * SEARCH: `index=botsv1 sourcetype=stream:http dest_ip="192.168.250.70" http_method=POST uri="/joomla/administrator/index.php" form_data=*username*passwd* | table _time uri src_ip dest_ip form_data`
     <img>
-    
+  * Further extracr passwd values only:
+  * SEARCH: `index=botsv1 sourcetype=stream:http dest_ip="192.168.250.70" http_method=POST form_data=*username*passwd* | rex field=form_data "passwd=(?<creds>\w+)"  | table src_ip creds`  <img>
+
+  Now examine **http_user_agent** field which shows the attacker used a Python script to automate Brute-force, but one request from Mozilla.
+  So narrow down to **http_user_agent**.
+  * SEARCH: `index=botsv1 sourcetype=stream:http dest_ip="192.168.250.70" http_method=POST form_data=*username*passwd* | rex field=form_data "passwd=(?<creds>\w+)" |table _time src_ip uri http_user_agent creds`
+  <img>
+  Yes Continious Brute-force attack from `IP 23.22.63.114` and one password attempt from `IP 40.80.148.42` Password is **batman**
+so we have
+* `/joomla/administrator/index.php` - url faced brute-force
+* `admin` - Attempt made against user
+* `batman` - password for admin access to CMS running  imreallynotbatman.com
+* `412`- Brute force attempts (1 passed)
+* `23.22.63.114` - IP conducted brute-force
+* `40.80.148.42` - IP used for successfull login
+* 
   
