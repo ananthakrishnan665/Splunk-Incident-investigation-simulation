@@ -79,10 +79,81 @@ Got 3 iP address check count and also check `http_methods` field we can see the 
   Yes Continious Brute-force attack from `IP 23.22.63.114` and one password attempt from `IP 40.80.148.42` Password is **batman**
 so we have
 * `/joomla/administrator/index.php` - url faced brute-force
+  
 * `admin` - Attempt made against user
+  
 * `batman` - password for admin access to CMS running  imreallynotbatman.com
+  
 * `412`- Brute force attempts (1 passed)
+ 
 * `23.22.63.114` - IP conducted brute-force
-* `40.80.148.42` - IP used for successfull login
 * 
+* `40.80.148.42` - IP used for successfull login
+
+## In Installation Phase
+
+At this stage we need to investigate  the attacker dropped anything in our server to maintain his access (like a backdoor).
+* Look for .exe extensions
+* SEARCH: `index=botsv1 sourcetype=stream:http dest_ip="192.168.250.70" *.exe`
+  <img>
+  Look ate the **part_filename{}** field and found an executable file **3791.exe** and a PHP file **agent.php**
+<img>
+
+Now we need to check these files have any relation with the suspected IP addresses
+* SEARCH: `index=botsv1 sourcetype=stream:http dest_ip="192.168.250.70" "part_filename{}"="3791.exe"`
+  <img>
+  Yes, we got a match
+  Now investigate the file was executed on server or not
+  * SEARCH: `index=botsv1 "3791.exe"`
+  <img>
+  Host-centric log source found the traces of **.exe**
+  So we need to look into sysmon log and Event Id for evidence (ID =1 means process creation).
+* SEARCH: `index=botsv1 "3791.exe" sourcetype="XmlWinEventLog" EventCode=1`
+  <img>
+  From **CommandLine** field we can understand **3791.exe** is executed on server
+  The evidence is also in the other logs.
+  From the screen you can collect its Md5 hash, user executed and use search hash on VirusTotal.
+  <img>
+  <img>
+  what we get
+  md5 hash: AAE3F5A29935E6ABCC2C2754D12A9AF0
+  user executed: NT AUTHORITY\IUSR
+  Other name of 3791: ab.exe
+
+  ## In Action On Objective
+
+  The attacker successfully defaced our website so find how it happened.
+  * Point to Suricata logs to know any detections there.
+  * SEARCH: `index=botsv1 dest=192.168.250.70 sourcetype=suricata`
+    <img>
+    Not detected. Now search for our server initiated communications.
+    *  `index=botsv1 src=192.168.250.70 sourcetype=suricata`
+      <img>
+      Yes here the suspicious IP addresses are shown that our server communicated with them.
+      So lets check the communication with that IP
+   * SEARCH: `index=botsv1 src=192.168.250.70 sourcetype=suricata dest_ip=23.22.63.114`
+     <img>
+  Look for that JPEG file looks suspicious.
+* SEARCH:  `index=botsv1 url="/poisonivy-is-coming-for-you-batman.jpeg" dest_ip="192.168.250.70" | table _time src dest_ip http.hostname url`
+  <img>
+  That jpeg came from the attacker host **prankglassinebracket.jumpingcrab.com**
+  <img>
+
+  **poisonivy-is-coming-for-you-batman.jpeg**- file defaced our website
+  **HTTP.URI.SQL.Injection**- Detected by forgitate firewall on IP 40.80.148.42
+
+  ## In Command & Control Phase
+
+  Before defacing the attacker uploaded the file in the server. so attacker used Dynamic Dns to resolve the malicious IP (Dynamic DNS is a service that lets attackers use a fixed domain   name (prankglassinebracket.jumpingcrab.com) that always points to their changing IP address.
+  Let investigate on communication start from fortigate_utm (firewall logs).
+  * SEARCH:  `index=botsv1 sourcetype=fortigate_utm"poisonivy-is-coming-for-you-batman.jpeg"`
+    <img>
+    Look on the fields  Source IP, destination IP, and URL
+    <img>
+    <img>
+    Lets look on stream:http log
+    * SEARCH `index=botsv1 sourcetype=stream:http dest_ip=23.22.63.114 "poisonivy-is-coming-for-you-batman.jpeg" src_ip=192.168.250.70`
+   Now this points out to the suspicious domain is a command & control
+
+
   
