@@ -154,6 +154,11 @@ Now we need to check these files have any relation with the suspected IP address
     Lets look on stream:http log
     * SEARCH `index=botsv1 sourcetype=stream:http dest_ip=23.22.63.114 "poisonivy-is-coming-for-you-batman.jpeg" src_ip=192.168.250.70`
    Now this points out to the suspicious domain is a command & control
+ what we found
+* **prankglassinebracket.jumpingcrab.com** - Domain name of attacker (Dynamic domain)
 
+## In Weaponization Phase
+
+We have some IP and Domain associated with attacker. To collect more information we use OSINT Tools.
 
   
