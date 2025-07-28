@@ -161,4 +161,22 @@ Now we need to check these files have any relation with the suspected IP address
 
 We have some IP and Domain associated with attacker. To collect more information we use OSINT Tools.
 
+* Check jumpingcrab.com in **Robtex.com**
+  <img>
+* check suspicious iP 23.22.63.114 in **VirusTotal**
+  <img>
+  Found some IP and domains related.
+  Under Relationship tab of virus total the domains similar to our organization and the attacker domain contacted  www.po1s0n1vy.com
+ * check www.po1s0n1vy.com in virusTotal and look for related domains.
+   <img>
+ * check www.po1s0n1vy.com on https://whois.domaintools.com/
+    <img>
+
+what we found
+* **IP 23.22.63.114** - IP of po1s0n1vy
+* **lillian.rose@po1s0n1vy.com** - Email associated with po1s0n1vy
+
+## In Delivery Phase
+
+
   
