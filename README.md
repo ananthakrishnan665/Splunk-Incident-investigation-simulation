@@ -18,10 +18,11 @@ We can look at the web traffic first that's how we know what is incoming so:
 * SEARCH: `index=botsv1 imreallynotbatman.com sourcetype=stream:http`
 <img3>
 
-From src_ip we could understand two IP created logs But the first IP creates more suspicious look at its count.
-<img>
+From src_ip field we could understand two IP created logs But the first IP creates more suspicious look at its count.
 
-Need to validate the IP is suspicious. If possible it may trigger in an IDS so lets look suricata:
+To further confirm our suspicion about the IP address 40.80.148.42, narrow down our search. We can look at the interesting fields like **User-Agent**, **Post request**, **URIs**, etc., to see what kind of traffic is coming from this particular IP
+
+Need to validate the IP is suspicious. If possible, it may trigger in an IDS, so let's look at Suricata logs:
  * SEARCH: `index=botsv1 imreallynotbatman.com src=40.80.148.42 sourcetype=suricata`
    <img>
 
