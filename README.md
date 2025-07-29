@@ -1,11 +1,12 @@
 # Splunk-Incident-investigation-simulation
-This project simulates a real-world incident where the website of Wayne Enterprises (imreallynotbatman.com) was defaced by cyber attackers. As a SOC Analyst, my role was to investigate how the attackers gained access using Splunk by analyzing logs stored in index "botsv1"
+## Scenario Summary
+This project simulates an incident where the website of Wayne Enterprises (imreallynotbatman.com) was defaced by cyber attackers. As a SOC Analyst, my role was to investigate how the attackers compromised the website and what actions they performed. Luckily Splunk was already configured using Splunk by analyzing logs stored in index "botsv1"
 We followed the Cyber Kill Chain model to map each stage of the attack from reconnaissance to exploitation and beyond. When necessary, we used OSINT to fill in gaps and enrich the investigation.
 
-`Scenario`: An incident where the website of Wayne Enterprises (imreallynotbatman.com) was defaced by cyber attackers.
+Scenario: An incident where the website of Wayne Enterprises (imreallynotbatman.com) was defaced by cyber attackers.
 
 ## In Reconnaissance Phase
-In this phase, the attackers are trying to collect maximum information about the server. So we need to cover some log sources covering Network traffic (we can capture all things try to communicate with our server.
+In this phase, the attackers are trying to collect maximum information about the server. So we need to cover some log sources covering Network traffic (we can capture all things that try to communicate with our server.
 So we need to search for traces:
 * SEARCH:`index=botsv1 imreallynotbatman.com`
 <img>
@@ -177,6 +178,12 @@ what we found
 * **lillian.rose@po1s0n1vy.com** - Email associated with po1s0n1vy
 
 ## In Delivery Phase
-
+So far we collected some informations about adversary now with the help of Threat intelligence tools we search for related malwares.
+* Search IP 23.22.63.114 in virusTotal and look under Relations tab.
+  Found a suspicious name under Communicating Files and Files Referring that is 	**MirandaTateScreensaver.scr.exe**
+  <img>
+  * check **MirandaTateScreensaver.scr.exe** in **HybridAnalysis** site shows behaviour analysis of malware.
+    <img>
+    With the help of Threat Intelligence sites, to find malware associated with the adversary's IP address, which appeared to be a secondary attack vector if the initial compromise          failed.
 
   
