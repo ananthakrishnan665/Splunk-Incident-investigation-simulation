@@ -9,16 +9,16 @@ Scenario: An incident where the website of Wayne Enterprises (imreallynotbatman.
 In this phase, the attackers are trying to collect maximum information about the server. So we need to cover some log sources covering Network traffic (we can capture all things that try to communicate with our server.
 So we need to search for traces:
 * SEARCH:`index=botsv1 imreallynotbatman.com`
-<img>
+<img1>
 
-From sourcetype field, we saw that the following log sources contain the traces of this search term
-<img>
+From the source_type field, we saw that the following log sources contain the traces of this search term
+<img2>
 
 We can look at the web traffic first that's how we know what is incoming so:
 * SEARCH: `index=botsv1 imreallynotbatman.com sourcetype=stream:http`
-<img>
+<img3>
 
-From src_ip we could understand two ip created logs But the first ip create more suspicious look at its count.
+From src_ip we could understand two IP created logs But the first IP creates more suspicious look at its count.
 <img>
 
 Need to validate the IP is suspicious. If possible it may trigger in an IDS so lets look suricata:
