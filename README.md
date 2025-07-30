@@ -19,32 +19,40 @@ We can look at the web traffic first that's how we know what is incoming so:
 <img3>
 
 From src_ip field we could understand two IP created logs But the first IP creates more suspicious look at its count.
+<img4>
 
-To further confirm our suspicion about the IP address 40.80.148.42, narrow down our search. We can look at the interesting fields like **User-Agent**, **Post request**, **URIs**, etc., to see what kind of traffic is coming from this particular IP
+To further confirm our suspicion about the IP address 40.80.148.42, narrow down our search. We can look at the interesting fields like **User-Agent**, **Post request**  **URIs** to see what kind of traffic is coming from this particular IP
+* User-Agent
+<img5>
+* Request
+<img6>
+* Uri
+<img7>
 
 Need to validate the IP is suspicious. If possible, it may trigger in an IDS, so let's look at Suricata logs:
- * SEARCH: `index=botsv1 imreallynotbatman.com src=40.80.148.42 sourcetype=suricata`
-   <img>
+ * SEARCH: `index=botsv1 imreallynotbatman.com src=40.80.148.42 sourcetype=suricata` and look field **alert.signature**
+   <img8>
 
 So we got some answers
- *  **Joomla** is the CMS our web server is using.
-     <img>
+ *  **Joomla** - is the CMS our web server is using (Uri field).
+     
+ * **Acunetix** is the web scanner that the attacker used to perform the scanning attempts (User_agent field).
 
- * **Acunetix** is the web scanner, the attacker used to perform the scanning attempts.
-<img>
+ * **192.168.250.70** is the IP address of the server imreallynotbatman.com (check dest_ip field or in logs)
+  <img9>
 
- * **192.168.250.70** is the IP address of the server imreallynotbatman.com
-<img>
-
-This information are important for attackers as well as us while investigating.
+This information is important for attackers as well as us while investigating.
 
 ## In Exploitation Phase
 
-Now we need to focus on to our Webserver (192.168.250.70).
+Now we need to focus on our Web Server (192.168.250.70).
+
 * SEARCH: `index=botsv1 sourcetype=stream:http dest_ip="192.168.250.70"`
+  
 This helps us to know about the incoming request to our server.
-<img>
-Got 3 iP address check count and also check `http_methods` field we can see the methods used. suspicious level of Post-requests
+<img10>
+
+Got 3 IP address check count and also check `http_methods` field we can see the methods used. suspicious level of Post-requests
 * Narrow search on Method post
 * SEARCH: `index=botsv1 sourcetype=stream:http dest_ip="192.168.250.70" http_method=POST`
 <img>
