@@ -220,9 +220,11 @@ what we found
 So far we collected some informations about adversary now with the help of Threat intelligence tools we search for related malwares.
 * Search IP 23.22.63.114 in virusTotal and look under Relations tab.
   Found a suspicious name under Communicating Files and Files Referring that is 	**MirandaTateScreensaver.scr.exe**
-  <img>
+  <img47>
+  <img48>
+  The Alphanumeric in the above image is the SHA-256 of the file.
   * check **MirandaTateScreensaver.scr.exe** in **HybridAnalysis** site shows behaviour analysis of malware.
-    <img>
-    With the help of Threat Intelligence sites, to find malware associated with the adversary's IP address, which appeared to be a secondary attack vector if the initial compromise          failed.
+    <img49>
+    With the help of Threat Intelligence sites, we  found malware associated with the adversary's IP address, which appeared to be a secondary attack vector if the initial compromise          failed.
 
   
