@@ -34,88 +34,95 @@ Need to validate the IP is suspicious. If possible, it may trigger in an IDS, so
    <img8>
 
 So we got some answers
- *  **Joomla** - is the CMS our web server is using (Uri field).
+ *  `Joomla` - is the CMS our web server is using (Uri field).
      
- * **Acunetix** is the web scanner that the attacker used to perform the scanning attempts (User_agent field).
+ * `Acunetix` - is the web scanner that the attacker used to perform the scanning attempts (User_agent field).
 
- * **192.168.250.70** is the IP address of the server imreallynotbatman.com (check dest_ip field or in logs)
+ * `192.168.250.70` - is the IP address of the server imreallynotbatman.com (check dest_ip field or in logs)
   <img9>
+ * `40.80.148.42` - IP was seen attempting to scan the server 
 
 This information is important for attackers as well as us while investigating.
 
 ## In Exploitation Phase
 
+For further confirm we can check the number of counts by each source_ip against our server.
+<img11>
 Now we need to focus on our Web Server (192.168.250.70).
 
 * SEARCH: `index=botsv1 sourcetype=stream:http dest_ip="192.168.250.70"`
   
-This helps us to know about the incoming request to our server.
+This helps us to know about the incoming request to our server & check the **Source_ip** field.
 <img10>
+<img12>
 
-Got 3 IP address check count and also check `http_methods` field we can see the methods used. suspicious level of Post-requests
+Got 3 IP address check count and also check the **http_methods** field, we can see the methods used. suspicious level of Post-requests
+<img13>
 * Narrow search on Method post
 * SEARCH: `index=botsv1 sourcetype=stream:http dest_ip="192.168.250.70" http_method=POST`
-<img>
- Included some interesting fields containing valuable information in screenshot below:
-<img>
-<img>
-
-* Noticed Joomla (CMS) included in some search terms
-* Identified admin login page of the Joomla CMS `/joomla/administrator/index.php` (search on google).
-* Suspecting Brute-force attack because it is admin page
-<img>
+<img14>
+ 
+After checking different fields, we got:
+* Noticed Joomla (CMS) included in some search terms.
+* Identified the admin login page of the Joomla CMS **/joomla/administrator/index.php** (search on Google).
+* Suspecting a Brute-force attack because it is the admin page.
+<img15>
 * search needed for the request sent to the login portal
-* SEARCH: index=botsv1 imreallynotbatman.com sourcetype=stream:http dest_ip="192.168.250.70"  uri="/joomla/administrator/index.php"
+* SEARCH: `index=botsv1 imreallynotbatman.com sourcetype=stream:http dest_ip="192.168.250.70"  uri="/joomla/administrator/index.php"`
 * Look at the form_data field to view requests.
-  <img>
+  <img16>
+  <img17>
 
-  * Narrow down search to form_data because suspect attackers tried multiple credential to gain access.
+  * Narrow down search to form_data because suspect attackers tried multiple credentials to gain access.
   * SEARCH: `index=botsv1 sourcetype=stream:http dest_ip="192.168.250.70" http_method=POST uri="/joomla/administrator/index.php" | table _time uri src_ip dest_ip form_data`
-    <img>
+    <img18>
   * | table _time uri src_ip dest_ip form_data`( For table view)
     
-  Look at the table we can see that `user`, `passwd` multiple times from an `IP 23.22.63.114`, that's a sign of a Brute-force attempt with the help of Automated tools (Look at the attempt in such a short time).
+  Look at the table, we can see that **user** & **passwd** multiple times from an `IP 23.22.63.114`, which is a  sign of a Brute-force attempt with the help of Automated tools (Look at    the attempts in such a short time).
 
-  To show the user and pass values we use **regex** (Regular Expressions):
-  * SEARCH: `index=botsv1 sourcetype=stream:http dest_ip="192.168.250.70" http_method=POST uri="/joomla/administrator/index.php" form_data=*username*passwd* | table _time uri src_ip dest_ip form_data`
-    <img>
-  * Further extracr passwd values only:
-  * SEARCH: `index=botsv1 sourcetype=stream:http dest_ip="192.168.250.70" http_method=POST form_data=*username*passwd* | rex field=form_data "passwd=(?<creds>\w+)"  | table src_ip creds`  <img>
+  To show the user and pass values, we use **regex** (Regular Expressions):
+  * SEARCH: `index=botsv1 sourcetype=stream:http dest_ip="192.168.250.70" http_method=POST uri="/joomla/administrator/index.php" form_data=*username*passwd* | table _time uri src_ip dest_ip form_data` 
+  * Further extract passwd values only:
+  * SEARCH: `index=botsv1 sourcetype=stream:http dest_ip="192.168.250.70" http_method=POST form_data=*username*passwd* | rex field=form_data "passwd=(?<creds>\w+)"  | table src_ip creds`
+    <img19>
 
-  Now examine **http_user_agent** field which shows the attacker used a Python script to automate Brute-force, but one request from Mozilla.
+  Now check the **http_user_agent** field, which shows the attacker used a Python script to automate the Brute-force, but one request from Mozilla.
   So narrow down to **http_user_agent**.
   * SEARCH: `index=botsv1 sourcetype=stream:http dest_ip="192.168.250.70" http_method=POST form_data=*username*passwd* | rex field=form_data "passwd=(?<creds>\w+)" |table _time src_ip uri http_user_agent creds`
-  <img>
-  Yes Continious Brute-force attack from `IP 23.22.63.114` and one password attempt from `IP 40.80.148.42` Password is **batman**
-so we have
-* `/joomla/administrator/index.php` - url faced brute-force
+  <img20>
+  confirmed continious Brute-force attack from **IP 23.22.63.114** and one successful login from **IP 40.80.148.42**.
+  <img21>
+
+We got some information
+* `/joomla/administrator/index.php` - Url faced brute-force.
   
-* `admin` - Attempt made against user
+* `admin` - Attempt made against user.
   
-* `batman` - password for admin access to CMS running  imreallynotbatman.com
+* `batman` - password for admin access to CMS running  imreallynotbatman.com.
   
-* `412`- Brute force attempts (1 passed)
+* `412`- Brute force attempts (1 passed).
  
-* `23.22.63.114` - IP conducted brute-force
-* 
-* `40.80.148.42` - IP used for successfull login
+* `23.22.63.114` - IP conducted brute-force.
+  
+* `40.80.148.42` - IP used for successful login.
 
 ## In Installation Phase
 
-At this stage we need to investigate  the attacker dropped anything in our server to maintain his access (like a backdoor).
+At this stage, we need to investigate whether  the attacker dropped anything on our server to maintain his access (like a backdoor).
 * Look for .exe extensions
 * SEARCH: `index=botsv1 sourcetype=stream:http dest_ip="192.168.250.70" *.exe`
-  <img>
-  Look ate the **part_filename{}** field and found an executable file **3791.exe** and a PHP file **agent.php**
-<img>
+  Look at the **part_filename{}** field and found an executable file **3791.exe** and a PHP file **agent.php**
+<img22>
 
-Now we need to check these files have any relation with the suspected IP addresses
+Now we need to check whether these files have any relation to the suspected IP addresses
 * SEARCH: `index=botsv1 sourcetype=stream:http dest_ip="192.168.250.70" "part_filename{}"="3791.exe"`
-  <img>
+  <img23>
+  Look at its **src_ip** field
+  <img24>
   Yes, we got a match
-  Now investigate the file was executed on server or not
+  Now, investigate whether the file was executed on the server or not
   * SEARCH: `index=botsv1 "3791.exe"`
-  <img>
+  <img25>
   Host-centric log source found the traces of **.exe**
   So we need to look into sysmon log and Event Id for evidence (ID =1 means process creation).
 * SEARCH: `index=botsv1 "3791.exe" sourcetype="XmlWinEventLog" EventCode=1`
