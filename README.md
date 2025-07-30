@@ -117,77 +117,100 @@ At this stage, we need to investigate whether  the attacker dropped anything on 
 Now we need to check whether these files have any relation to the suspected IP addresses
 * SEARCH: `index=botsv1 sourcetype=stream:http dest_ip="192.168.250.70" "part_filename{}"="3791.exe"`
   <img23>
+
   Look at its **src_ip** field
   <img24>
   Yes, we got a match
+
   Now, investigate whether the file was executed on the server or not
   * SEARCH: `index=botsv1 "3791.exe"`
   <img25>
-  Host-centric log source found the traces of **.exe**
-  So we need to look into sysmon log and Event Id for evidence (ID =1 means process creation).
+
+   Host-centric log source found the traces of **.exe**
+  <img26>
+
+   So we need to look into the Sysmon log and Event Id for evidence (ID =1 process creation).
 * SEARCH: `index=botsv1 "3791.exe" sourcetype="XmlWinEventLog" EventCode=1`
-  <img>
+  <img27>
+
   From **CommandLine** field we can understand **3791.exe** is executed on server
+  <img28>
   The evidence is also in the other logs.
-  From the screen you can collect its Md5 hash, user executed and use search hash on VirusTotal.
-  <img>
-  <img>
-  what we get
-  md5 hash: AAE3F5A29935E6ABCC2C2754D12A9AF0
+  From the screen, you can collect it's MD5 hash, user executed and use search hash on VirusTotal.
+  
+  What we get
+  md5 hash: AAE3F5A29935E6ABCC2C2754D12A9AF0 (Also view other hashes)
+  <img29>
   user executed: NT AUTHORITY\IUSR
+  <img30>
   Other name of 3791: ab.exe
+  <img31>
 
   ## In Action On Objective
 
-  The attacker successfully defaced our website so find how it happened.
+  The attacker successfully defaced our website, So find out how it happened. We need to investigate the log sources & IP addresses communicating with the webserver.
+
   * Point to Suricata logs to know any detections there.
   * SEARCH: `index=botsv1 dest=192.168.250.70 sourcetype=suricata`
-    <img>
+    <img32>
     Not detected. Now search for our server initiated communications.
-    *  `index=botsv1 src=192.168.250.70 sourcetype=suricata`
-      <img>
-      Yes here the suspicious IP addresses are shown that our server communicated with them.
-      So lets check the communication with that IP
+    * SEARCH: `index=botsv1 src=192.168.250.70 sourcetype=suricata`
+      <img33>
+      <img34>
+      Yes, here the suspicious IP addresses are showing that our server communicated with.
+
+      So let's check the communication with that IP
    * SEARCH: `index=botsv1 src=192.168.250.70 sourcetype=suricata dest_ip=23.22.63.114`
-     <img>
+     <img35>
+     <img36>
   Look for that JPEG file looks suspicious.
+
 * SEARCH:  `index=botsv1 url="/poisonivy-is-coming-for-you-batman.jpeg" dest_ip="192.168.250.70" | table _time src dest_ip http.hostname url`
-  <img>
+  <img37>
   That jpeg came from the attacker host **prankglassinebracket.jumpingcrab.com**
-  <img>
+  
+ Information we collected:
 
   **poisonivy-is-coming-for-you-batman.jpeg**- file defaced our website
-  **HTTP.URI.SQL.Injection**- Detected by forgitate firewall on IP 40.80.148.42
+  **HTTP.URI.SQL.Injection**- Detected by the **forgitate_utm** firewall on IP 40.80.148.42
+  <img38>
 
   ## In Command & Control Phase
 
-  Before defacing the attacker uploaded the file in the server. so attacker used Dynamic Dns to resolve the malicious IP (Dynamic DNS is a service that lets attackers use a fixed domain   name (prankglassinebracket.jumpingcrab.com) that always points to their changing IP address.
-  Let investigate on communication start from fortigate_utm (firewall logs).
+  Before defacing, the attacker uploaded the file to the server. So the attacker used Dynamic Dns to resolve the malicious IP (Dynamic DNS is a service that lets attackers use a fixed domain   name (prankglassinebracket.jumpingcrab.com) that always points to their changing IP address.
+  
+  Let's investigate communication starting from fortigate_utm (firewall logs).
   * SEARCH:  `index=botsv1 sourcetype=fortigate_utm"poisonivy-is-coming-for-you-batman.jpeg"`
-    <img>
-    Look on the fields  Source IP, destination IP, and URL
-    <img>
-    <img>
-    Lets look on stream:http log
+    <img39>
+    Look at the fields  Source IP, destination IP, and URl
+    * Url
+    <img40>
+    We found the Fully Qualified Domain name
+    Let's look at the **stream:http** log to confirm
     * SEARCH `index=botsv1 sourcetype=stream:http dest_ip=23.22.63.114 "poisonivy-is-coming-for-you-batman.jpeg" src_ip=192.168.250.70`
-   Now this points out to the suspicious domain is a command & control
- what we found
+   Now this points to the suspicious domain as a command & control
+   <img41>
+ Information we got:
+
 * **prankglassinebracket.jumpingcrab.com** - Domain name of attacker (Dynamic domain)
 
 ## In Weaponization Phase
 
-We have some IP and Domain associated with attacker. To collect more information we use OSINT Tools.
+We have some IP and Domain associated with the attacker. To collect more information, we use OSINT Tools.
 
 * Check jumpingcrab.com in **Robtex.com**
-  <img>
+  <img42>
+  <img43>
+
 * check suspicious iP 23.22.63.114 in **VirusTotal**
-  <img>
-  Found some IP and domains related.
-  Under Relationship tab of virus total the domains similar to our organization and the attacker domain contacted  www.po1s0n1vy.com
- * check www.po1s0n1vy.com in virusTotal and look for related domains.
-   <img>
+  <img44>
+  Found some IP addresses and domains related.
+  Under the Relationship tab of VirusTotal, the domains similar to our organization (Wayne) and the attacker domain contacted  www.po1s0n1vy.com
+ 
+ * Check www.po1s0n1vy.com in VirusTotal and look for related domains.
+   <img45>
  * check www.po1s0n1vy.com on https://whois.domaintools.com/
-    <img>
+    <img46>
 
 what we found
 * **IP 23.22.63.114** - IP of po1s0n1vy
