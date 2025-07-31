@@ -9,37 +9,37 @@ Scenario: An incident where the website of Wayne Enterprises (imreallynotbatman.
 In this phase, the attackers are trying to collect maximum information about the server. So we need to cover some log sources covering Network traffic (we can capture all things that try to communicate with our server.
 So we need to search for traces:
 * SEARCH:`index=botsv1 imreallynotbatman.com`
-<img1>
+![scan](./screenshots/step-1-scan.png)
 
 From the source_type field, we saw that the following log sources contain the traces of this search term
-<img2>
+![Fields](./screenshots/step-2-source-fields.png)
 
 We can look at the web traffic first that's how we know what is incoming so:
 * SEARCH: `index=botsv1 imreallynotbatman.com sourcetype=stream:http`
-<img3>
+ ![http](./screenshots/step-3-https-stream.png)
 
 From src_ip field we could understand two IP created logs But the first IP creates more suspicious look at its count.
-<img4>
+![IP](./screenshots/step-4-IP.png)
 
 To further confirm our suspicion about the IP address 40.80.148.42, narrow down our search. We can look at the interesting fields like **User-Agent**, **Post request**  **URIs** to see what kind of traffic is coming from this particular IP
 * User-Agent
-<img5>
+![user](./screenshots/step-5-user-agent.png)
 * Request
-<img6>
+![request](./screenshots/step-6-request.png)
 * Uri
-<img7>
+![url](./screenshots/step-7-url.png)
 
 Need to validate the IP is suspicious. If possible, it may trigger in an IDS, so let's look at Suricata logs:
  * SEARCH: `index=botsv1 imreallynotbatman.com src=40.80.148.42 sourcetype=suricata` and look field **alert.signature**
-   <img8>
+   ![signature](./screenshots/step-8-signature.png)
 
-So we got some answers
+So we got some answers:
  *  `Joomla` - is the CMS our web server is using (Uri field).
      
  * `Acunetix` - is the web scanner that the attacker used to perform the scanning attempts (User_agent field).
 
  * `192.168.250.70` - is the IP address of the server imreallynotbatman.com (check dest_ip field or in logs)
-  <img9>
+  ![destip](./screenshots/step-9-destip.png)
  * `40.80.148.42` - IP was seen attempting to scan the server 
 
 This information is important for attackers as well as us while investigating.
@@ -47,35 +47,35 @@ This information is important for attackers as well as us while investigating.
 ## In Exploitation Phase
 
 For further confirm we can check the number of counts by each source_ip against our server.
-<img11>
+![count](./screenshots/step-11-count.png)
 Now we need to focus on our Web Server (192.168.250.70).
 
 * SEARCH: `index=botsv1 sourcetype=stream:http dest_ip="192.168.250.70"`
   
 This helps us to know about the incoming request to our server & check the **Source_ip** field.
-<img10>
-<img12>
+![narrow](./screenshots/step-10-destip-narrow.png)
+![ip](./screenshots/step-12-3-ip.png)
 
 Got 3 IP address check count and also check the **http_methods** field, we can see the methods used. suspicious level of Post-requests
-<img13>
+![communicate](./screenshots/step-13-http-communicate.png)
 * Narrow search on Method post
 * SEARCH: `index=botsv1 sourcetype=stream:http dest_ip="192.168.250.70" http_method=POST`
-<img14>
+![post](./screenshots/step-14-post.png)
  
 After checking different fields, we got:
 * Noticed Joomla (CMS) included in some search terms.
 * Identified the admin login page of the Joomla CMS **/joomla/administrator/index.php** (search on Google).
 * Suspecting a Brute-force attack because it is the admin page.
-<img15>
+![admin](./screenshots/step-15-admin.png)
 * search needed for the request sent to the login portal
 * SEARCH: `index=botsv1 imreallynotbatman.com sourcetype=stream:http dest_ip="192.168.250.70"  uri="/joomla/administrator/index.php"`
 * Look at the form_data field to view requests.
-  <img16>
-  <img17>
+  ![jhoomla](./screenshots/step-16-jhoomla.png)
+  ![form_data](./screenshots/step-17-form-data.png)
 
   * Narrow down search to form_data because suspect attackers tried multiple credentials to gain access.
   * SEARCH: `index=botsv1 sourcetype=stream:http dest_ip="192.168.250.70" http_method=POST uri="/joomla/administrator/index.php" | table _time uri src_ip dest_ip form_data`
-    <img18>
+    ![narrow](./screenshots/step-18-narrow-form.png)
   * | table _time uri src_ip dest_ip form_data`( For table view)
     
   Look at the table, we can see that **user** & **passwd** multiple times from an `IP 23.22.63.114`, which is a  sign of a Brute-force attempt with the help of Automated tools (Look at    the attempts in such a short time).
@@ -84,14 +84,14 @@ After checking different fields, we got:
   * SEARCH: `index=botsv1 sourcetype=stream:http dest_ip="192.168.250.70" http_method=POST uri="/joomla/administrator/index.php" form_data=*username*passwd* | table _time uri src_ip dest_ip form_data` 
   * Further extract passwd values only:
   * SEARCH: `index=botsv1 sourcetype=stream:http dest_ip="192.168.250.70" http_method=POST form_data=*username*passwd* | rex field=form_data "passwd=(?<creds>\w+)"  | table src_ip creds`
-    <img19>
+    ![passwd](./screenshots/step-19-passwd.png)
 
   Now check the **http_user_agent** field, which shows the attacker used a Python script to automate the Brute-force, but one request from Mozilla.
   So narrow down to **http_user_agent**.
   * SEARCH: `index=botsv1 sourcetype=stream:http dest_ip="192.168.250.70" http_method=POST form_data=*username*passwd* | rex field=form_data "passwd=(?<creds>\w+)" |table _time src_ip uri http_user_agent creds`
-  <img20>
+  ![](./screenshots/step-20-user-agent.png)
   confirmed continious Brute-force attack from **IP 23.22.63.114** and one successful login from **IP 40.80.148.42**.
-  <img21>
+  ![python](./screenshots/step-21-python.png)
 
 We got some information
 * `/joomla/administrator/index.php` - Url faced brute-force.
@@ -112,39 +112,39 @@ At this stage, we need to investigate whether  the attacker dropped anything on 
 * Look for .exe extensions
 * SEARCH: `index=botsv1 sourcetype=stream:http dest_ip="192.168.250.70" *.exe`
   Look at the **part_filename{}** field and found an executable file **3791.exe** and a PHP file **agent.php**
-<img22>
+![exe](./screenshots/step-22-exe.png)
 
 Now we need to check whether these files have any relation to the suspected IP addresses
 * SEARCH: `index=botsv1 sourcetype=stream:http dest_ip="192.168.250.70" "part_filename{}"="3791.exe"`
-  <img23>
+  ![exe-search](./screenshots/step-23-exe-search.png)
 
   Look at its **src_ip** field
-  <img24>
+  ![susp-ip](./screenshots/step-24-susp-ip.png)
   Yes, we got a match
 
   Now, investigate whether the file was executed on the server or not
   * SEARCH: `index=botsv1 "3791.exe"`
-  <img25>
+  ![execution](./screenshots/step-25-execution.png)
 
    Host-centric log source found the traces of **.exe**
-  <img26>
+  ![xml](./screenshots/step-26-xml-logs.png)
 
    So we need to look into the Sysmon log and Event Id for evidence (ID =1 process creation).
 * SEARCH: `index=botsv1 "3791.exe" sourcetype="XmlWinEventLog" EventCode=1`
-  <img27>
+  ![xml-win](./screenshots/step-27-xml-winlogs.png)
 
   From **CommandLine** field we can understand **3791.exe** is executed on server
-  <img28>
+  ![server-exec](./screenshots/step-28-server-exec.png)
   The evidence is also in the other logs.
   From the screen, you can collect it's MD5 hash, user executed and use search hash on VirusTotal.
   
   What we get
   md5 hash: AAE3F5A29935E6ABCC2C2754D12A9AF0 (Also view other hashes)
-  <img29>
+  ![md5](./screenshots/step-29-md5.png)
   user executed: NT AUTHORITY\IUSR
-  <img30>
+  ![author](./screenshots/step-30-author.png)
   Other name of 3791: ab.exe
-  <img31>
+  ![sha](./screenshots/step-31-sha.png)
 
   ## In Action On Objective
 
@@ -152,28 +152,28 @@ Now we need to check whether these files have any relation to the suspected IP a
 
   * Point to Suricata logs to know any detections there.
   * SEARCH: `index=botsv1 dest=192.168.250.70 sourcetype=suricata`
-    <img32>
+    ![communicate](./screenshots/step-32-communicate-from.png)
     Not detected. Now search for our server initiated communications.
     * SEARCH: `index=botsv1 src=192.168.250.70 sourcetype=suricata`
-      <img33>
-      <img34>
+      ![communicate](./screenshots/step-33-commucate-to.png)
+      ![communicate](./screenshots/step-34-communicate-ip.png)
       Yes, here the suspicious IP addresses are showing that our server communicated with.
 
       So let's check the communication with that IP
    * SEARCH: `index=botsv1 src=192.168.250.70 sourcetype=suricata dest_ip=23.22.63.114`
-     <img35>
-     <img36>
+     ![narrow_ip](./screenshots/step-35-narrow-ip.png)
+     ![susp_file](./screenshots/step-36-susp-file.png)
   Look for that JPEG file looks suspicious.
 
 * SEARCH:  `index=botsv1 url="/poisonivy-is-coming-for-you-batman.jpeg" dest_ip="192.168.250.70" | table _time src dest_ip http.hostname url`
-  <img37>
+  ![jpeg](./screenshots/step-37-jpeg.png)
   That jpeg came from the attacker host **prankglassinebracket.jumpingcrab.com**
   
  Information we collected:
 
   **poisonivy-is-coming-for-you-batman.jpeg**- file defaced our website
   **HTTP.URI.SQL.Injection**- Detected by the **forgitate_utm** firewall on IP 40.80.148.42
-  <img38>
+  ![sql](./screenshots/step-38-sql.png)
 
   ## In Command & Control Phase
 
@@ -181,15 +181,15 @@ Now we need to check whether these files have any relation to the suspected IP a
   
   Let's investigate communication starting from fortigate_utm (firewall logs).
   * SEARCH:  `index=botsv1 sourcetype=fortigate_utm"poisonivy-is-coming-for-you-batman.jpeg"`
-    <img39>
+    ![fortigate](./screenshots/step-39-fortigate.png)
     Look at the fields  Source IP, destination IP, and URl
     * Url
-    <img40>
+    ![url](./screenshots/step-40-url.png)
     We found the Fully Qualified Domain name
     Let's look at the **stream:http** log to confirm
     * SEARCH `index=botsv1 sourcetype=stream:http dest_ip=23.22.63.114 "poisonivy-is-coming-for-you-batman.jpeg" src_ip=192.168.250.70`
    Now this points to the suspicious domain as a command & control
-   <img41>
+  ![verify](./screenshots/step-41-verify.png)
  Information we got:
 
 * **prankglassinebracket.jumpingcrab.com** - Domain name of attacker (Dynamic domain)
@@ -199,18 +199,18 @@ Now we need to check whether these files have any relation to the suspected IP a
 We have some IP and Domain associated with the attacker. To collect more information, we use OSINT Tools.
 
 * Check jumpingcrab.com in **Robtex.com**
-  <img42>
-  <img43>
+  ![Robtex](./screenshots/step-42-Robtex-1.png)
+  ![Robtex2](./screenshots/step-43-Robtex-2.png)
 
 * check suspicious iP 23.22.63.114 in **VirusTotal**
-  <img44>
+  ![virustotal](./screenshots/step-44-virustotal.png)
   Found some IP addresses and domains related.
   Under the Relationship tab of VirusTotal, the domains similar to our organization (Wayne) and the attacker domain contacted  www.po1s0n1vy.com
  
  * Check www.po1s0n1vy.com in VirusTotal and look for related domains.
-   <img45>
+   ![whois](./screenshots/step-45-pois-relate.png)
  * check www.po1s0n1vy.com on https://whois.domaintools.com/
-    <img46>
+    ![whois](./screenshots/step-46-whois.png)
 
 what we found
 * **IP 23.22.63.114** - IP of po1s0n1vy
@@ -220,11 +220,11 @@ what we found
 So far we collected some informations about adversary now with the help of Threat intelligence tools we search for related malwares.
 * Search IP 23.22.63.114 in virusTotal and look under Relations tab.
   Found a suspicious name under Communicating Files and Files Referring that is 	**MirandaTateScreensaver.scr.exe**
-  <img47>
-  <img48>
+  ![malicious](./screenshots/step-47-miranda.png)
+  ![sha-256](./screenshots/step-48-sha256.png)
   The Alphanumeric in the above image is the SHA-256 of the file.
   * check **MirandaTateScreensaver.scr.exe** in **HybridAnalysis** site shows behaviour analysis of malware.
-    <img49>
+    ![final](./screenshots/step-49-final.png)
     With the help of Threat Intelligence sites, we  found malware associated with the adversary's IP address, which appeared to be a secondary attack vector if the initial compromise          failed.
 
   
