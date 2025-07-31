@@ -138,12 +138,14 @@ Now we need to check whether these files have any relation to the suspected IP a
   The evidence is also in the other logs.
   From the screen, you can collect it's MD5 hash, user executed and use search hash on VirusTotal.
   
-  What we get
-  md5 hash: AAE3F5A29935E6ABCC2C2754D12A9AF0 (Also view other hashes)
+  What we get:
+
+ * `3791.exe`: file executed on server
+ * `AAE3F5A29935E6ABCC2C2754D12A9AF0`: md5 hash of exe file (Also view other hashes)
   ![md5](./screenshots/step-29-md5.png)
-  user executed: NT AUTHORITY\IUSR
+ * `NT AUTHORITY\IUSR`: User executed.
   ![author](./screenshots/step-30-author.png)
-  Other name of 3791: ab.exe
+ * `ab.exe`: Other name of 3791.exe.
   ![sha](./screenshots/step-31-sha.png)
 
   ## In Action On Objective
@@ -163,7 +165,7 @@ Now we need to check whether these files have any relation to the suspected IP a
    * SEARCH: `index=botsv1 src=192.168.250.70 sourcetype=suricata dest_ip=23.22.63.114`
      ![narrow_ip](./screenshots/step-35-narrow-ip.png)
      ![susp_file](./screenshots/step-36-susp-file.png)
-  Look for that JPEG file looks suspicious.
+     Look for that JPEG file looks suspicious.
 
 * SEARCH:  `index=botsv1 url="/poisonivy-is-coming-for-you-batman.jpeg" dest_ip="192.168.250.70" | table _time src dest_ip http.hostname url`
   ![jpeg](./screenshots/step-37-jpeg.png)
@@ -171,8 +173,8 @@ Now we need to check whether these files have any relation to the suspected IP a
   
  Information we collected:
 
-  **poisonivy-is-coming-for-you-batman.jpeg**- file defaced our website
-  **HTTP.URI.SQL.Injection**- Detected by the **forgitate_utm** firewall on IP 40.80.148.42
+  * `poisonivy-is-coming-for-you-batman.jpeg`- file defaced our website
+  * `HTTP.URI.SQL.Injection`- Detected by the **forgitate_utm** firewall on IP 40.80.148.42
   ![sql](./screenshots/step-38-sql.png)
 
   ## In Command & Control Phase
@@ -192,7 +194,7 @@ Now we need to check whether these files have any relation to the suspected IP a
   ![verify](./screenshots/step-41-verify.png)
  Information we got:
 
-* **prankglassinebracket.jumpingcrab.com** - Domain name of attacker (Dynamic domain)
+* `prankglassinebracket.jumpingcrab.com` - Domain name of attacker (Dynamic domain)
 
 ## In Weaponization Phase
 
@@ -212,9 +214,9 @@ We have some IP and Domain associated with the attacker. To collect more informa
  * check www.po1s0n1vy.com on https://whois.domaintools.com/
     ![whois](./screenshots/step-46-whois.png)
 
-what we found
-* **IP 23.22.63.114** - IP of po1s0n1vy
-* **lillian.rose@po1s0n1vy.com** - Email associated with po1s0n1vy
+what we found:
+* `IP 23.22.63.114` - IP of po1s0n1vy
+* `lillian.rose@po1s0n1vy.com` - Email associated with po1s0n1vy
 
 ## In Delivery Phase
 So far we collected some informations about adversary now with the help of Threat intelligence tools we search for related malwares.
@@ -227,4 +229,23 @@ So far we collected some informations about adversary now with the help of Threa
     ![final](./screenshots/step-49-final.png)
     With the help of Threat Intelligence sites, we  found malware associated with the adversary's IP address, which appeared to be a secondary attack vector if the initial compromise          failed.
 
+## Findings
+ * `IP 40.80.148.42` - IP was seen attempting to scan our web server.
+ * `Acunetix` - A Web scanner tool that the attacker used to perform the scanning attempts.
+ * `23.22.63.114` - IP conducted brute-force attack.
+ * `40.80.148.42` - IP used for successful login
+ * `3791.exe`: file executed on server
+ * `poisonivy-is-coming-for-you-batman.jpeg`- file defaced our website
+ * `prankglassinebracket.jumpingcrab.com` - Domain name of attacker
+ * `lillian.rose@po1s0n1vy.com` - Email associated with suspicious IP
+ * `MirandaTateScreensaver.scr.exe` - secondary attack vector if the initial compromise failed
+
+## Conclusion
+ This project gave me a hands-on experience in investigating a Cyber attack using Splunk as a Soc Analyst role. I got a practical experience on how attackers progress through each Cyber Kill Chain framework & learned how to:
+ * Effective log analysis using a search query in SPL.
+ * Understand the practical use of the Cyber Kill Chain.
+ * Correlate findings with Intelligence Tools, OSINT.
+ * Brute-force, Malware delivery, C2 communication — all traced.
+ * Document everything in a professional & beginner-friendly format.
+   
   
